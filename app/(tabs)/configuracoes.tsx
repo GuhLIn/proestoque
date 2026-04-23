@@ -2,12 +2,11 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '../../src/constants/theme';
 
-export default function Home() {
+export default function Configuracoes() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.title}>Olá, João 👋</Text>
-        <Text style={styles.subtitle}>Visão geral do seu estoque</Text>
+        <Text style={styles.title}>Configurações</Text>
       </View>
     </SafeAreaView>
   );
@@ -26,10 +25,5 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizeXl,
     fontWeight: typography.fontWeightBold,
     color: colors.text,
-  },
-  subtitle: {
-    fontSize: typography.fontSizeSm,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
   },
 });
