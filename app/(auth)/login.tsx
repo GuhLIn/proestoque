@@ -1,26 +1,28 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { Input } from '../../src/components/Input';
 import { LogoProEstoque } from '../../src/components/LogoProEstoque';
 import { borderRadius, colors, shadows, spacing, typography } from '../../src/constants/theme';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function Login() {
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
-  function handleLogin() {
-    router.replace('/(tabs)');
+  async function handleLogin() {
+    await login(email, senha);
   }
 
   return (
@@ -39,7 +41,7 @@ export default function Login() {
             <Input
               label="E-mail"
               icon="mail-outline"
-              placeholder="joao@email.com"
+              placeholder="gustavo@email.com"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -62,7 +64,7 @@ export default function Login() {
               <Text style={styles.forgotText}>Esqueci minha senha</Text>
             </TouchableOpacity>
 
-            <Button label="Entrar" onPress={handleLogin} fullWidth />
+            <Button label="Entrar" onPress={handleLogin} fullWidth loading={isLoading} />
 
             <View style={styles.registerRow}>
               <Text style={styles.registerText}>Não tem conta? </Text>

@@ -8,7 +8,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { borderRadius, colors, shadows, spacing, typography } from '../../src/constants/theme';
+import { useAuth } from '../../src/contexts/AuthContext';
 import { PRODUTOS_MOCK, RESUMO_MOCK, type Produto } from '../../src/data/mockData';
+
+function getSaudacao() {
+  const hora = new Date().getHours();
+  if (hora < 12) return 'Bom dia';
+  if (hora < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
 
 const CARDS_RESUMO = [
   { id: '1', label: 'Produtos', valor: RESUMO_MOCK.totalProdutos, icone: '📦', cor: colors.primaryLight },
@@ -42,6 +50,7 @@ function ProdutoItem({ item }: { item: Produto }) {
 }
 
 export default function Home() {
+  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {
@@ -50,16 +59,17 @@ export default function Home() {
   }, []);
 
   const produtosCriticos = PRODUTOS_MOCK.filter(p => p.status !== 'normal');
+  const primeiraLetra = user?.nome?.charAt(0).toUpperCase() ?? 'U';
 
   const ListHeader = () => (
     <View>
       <View style={styles.header}>
         <View>
-          <Text style={styles.saudacao}>Olá, João 👋</Text>
+          <Text style={styles.saudacao}>{getSaudacao()}, {user?.nome} 👋</Text>
           <Text style={styles.subtitulo}>Visão geral do estoque</Text>
         </View>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>J</Text>
+          <Text style={styles.avatarText}>{primeiraLetra}</Text>
         </View>
       </View>
 
