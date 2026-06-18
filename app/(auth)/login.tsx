@@ -1,125 +1,73 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../../src/components/Button';
-import { Input } from '../../src/components/Input';
-import { LogoProEstoque } from '../../src/components/LogoProEstoque';
-import { borderRadius, colors, shadows, spacing, typography } from '../../src/constants/theme';
-import { useAuth } from '../../src/contexts/AuthContext';
+import { Button } from "@/src/components/Button";
+import { Input } from "@/src/components/Input";
+import { LogoProEstoque } from "@/src/components/LogoProEstoque";
+import { Colors, Spacing } from "@/src/constants/theme";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Login() {
   const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
 
-  async function handleLogin() {
-    await login(email, senha);
-  }
+  const handleLogin = async () => {
+    if (!email.trim() || !senha.trim()) {
+      Alert.alert("Atenção", "Preencha e-mail e senha.");
+      return;
+    }
+    try {
+      await login(email, senha);
+    } catch (error) {
+      Alert.alert("Erro", "E-mail ou senha inválidos.");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <LogoProEstoque size="lg" />
+      <View style={styles.container}>
+        <LogoProEstoque size="lg" />
 
-          <View style={styles.card}>
-            <Input
-              label="E-mail"
-              icon="mail-outline"
-              placeholder="gustavo@email.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+        <Input
+          label="E-mail"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          leftIcon="mail-outline"
+          returnKeyType="next"
+        />
 
-            <Input
-              label="Senha"
-              icon="lock-closed-outline"
-              placeholder="••••••••"
-              value={senha}
-              onChangeText={setSenha}
-              isPassword
-            />
+        <Input
+          label="Senha"
+          value={senha}
+          onChangeText={setSenha}
+          isPassword
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
+        />
 
-            <TouchableOpacity
-              onPress={() => router.push('/(auth)/recuperar-senha')}
-              style={styles.forgotLink}
-            >
-              <Text style={styles.forgotText}>Esqueci minha senha</Text>
-            </TouchableOpacity>
+        <Button
+          label="Entrar"
+          onPress={handleLogin}
+          loading={isLoading}
+          fullWidth
+        />
 
-            <Button label="Entrar" onPress={handleLogin} fullWidth loading={isLoading} />
-
-            <View style={styles.registerRow}>
-              <Text style={styles.registerText}>Não tem conta? </Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/cadastro')}>
-                <Text style={styles.registerLink}>Cadastrar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <Button
+          label="Criar conta"
+          onPress={() => router.push("/(auth)/cadastro")}
+          variant="ghost"
+          fullWidth
+        />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.primaryLight,
-  },
-  flex: {
-    flex: 1,
-  },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.lg,
-  },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    ...shadows.md,
-  },
-  forgotLink: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.lg,
-    marginTop: -spacing.sm,
-  },
-  forgotText: {
-    color: colors.primary,
-    fontSize: typography.fontSizeSm,
-  },
-  registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing.lg,
-  },
-  registerText: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSizeSm,
-  },
-  registerLink: {
-    color: colors.primary,
-    fontSize: typography.fontSizeSm,
-    fontWeight: typography.fontWeightBold,
-  },
+  safe:      { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, padding: Spacing[6], justifyContent: "center", gap: Spacing[2] },
 });

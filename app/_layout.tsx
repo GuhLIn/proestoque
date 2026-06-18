@@ -1,10 +1,10 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { colors } from '../src/constants/theme';
-import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
+import { Colors } from "@/src/constants/theme";
+import { AuthProvider, useAuth } from "@/src/contexts/AuthContext";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 
-function NavigationGuard({ children }: { children: React.ReactNode }) {
+function NavigationGuard() {
   const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -12,36 +12,35 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const estaNoGrupoAuth = segments[0] === "(auth)";
 
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(tabs)');
+    if (!isAuthenticated && !estaNoGrupoAuth) {
+      router.replace("/(auth)/login");
+    } else if (isAuthenticated && estaNoGrupoAuth) {
+      router.replace("/(tabs)");
     }
   }, [isAuthenticated, isLoading, segments]);
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background }}>
+        <ActivityIndicator size="large" color={Colors.primary[600]} />
       </View>
     );
   }
 
-  return <>{children}</>;
+  return null;
 }
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NavigationGuard>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="index" />
-        </Stack>
-      </NavigationGuard>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="index" />
+      </Stack>
+      <NavigationGuard />
     </AuthProvider>
   );
 }

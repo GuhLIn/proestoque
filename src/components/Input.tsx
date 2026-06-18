@@ -1,109 +1,99 @@
-import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TextInputProps,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { borderRadius, colors, spacing, typography } from '../constants/theme';
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
 
 interface InputProps extends TextInputProps {
   label?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
   error?: string;
+  hint?: string;
+  leftIcon?: keyof typeof Ionicons.glyphMap;
   isPassword?: boolean;
 }
 
-export function Input({ label, icon, error, isPassword = false, ...rest }: InputProps) {
-  const [showPassword, setShowPassword] = useState(false);
+export function Input({
+  label,
+  error,
+  hint,
+  leftIcon,
+  isPassword = false,
+  ...rest
+}: InputProps) {
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const hasError = !!error;
 
   return (
     <View style={styles.wrapper}>
       {label && <Text style={styles.label}>{label}</Text>}
+
       <View
         style={[
-          styles.container,
-          focused && styles.containerFocused,
-          !!error && styles.containerError,
+          styles.inputContainer,
+          focused && styles.focused,
+          hasError && styles.errorBorder,
         ]}
       >
-        {icon && (
+        {leftIcon && (
           <Ionicons
-            name={icon}
+            name={leftIcon}
             size={18}
-            color={error ? colors.error : focused ? colors.primary : colors.textMuted}
-            style={styles.icon}
+            color={focused ? Colors.primary[600] : Colors.neutral[400]}
+            style={styles.leftIcon}
           />
         )}
+
         <TextInput
           style={styles.input}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={Colors.neutral[400]}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           {...rest}
         />
+
         {isPassword && (
-          <TouchableOpacity
-            onPress={() => setShowPassword((prev) => !prev)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
+          <Pressable onPress={() => setShowPassword((v) => !v)} style={styles.rightIcon}>
             <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
               size={18}
-              color={colors.textMuted}
+              color={Colors.neutral[400]}
             />
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
-      {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+      {hasError && <Text style={styles.errorText}>{error}</Text>}
+      {!hasError && hint && <Text style={styles.hintText}>{hint}</Text>}
     </View>
   );
 }
 
+export default Input;
+
 const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: spacing.md,
-  },
+  wrapper: { marginBottom: Spacing[4] },
   label: {
-    fontSize: typography.fontSizeSm,
-    fontWeight: typography.fontWeightMedium,
-    color: colors.text,
-    marginBottom: spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.semibold,
+    color: Colors.neutral[700],
+    marginBottom: Spacing[1],
   },
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.md,
-    height: 52,
+  inputContainer: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    borderWidth: 1.5, borderColor: Colors.border,
+    paddingHorizontal: Spacing[3],
   },
-  containerFocused: {
-    borderColor: colors.borderFocus,
-    backgroundColor: colors.surface,
-  },
-  containerError: {
-    borderColor: colors.error,
-    backgroundColor: colors.errorLight,
-  },
-  icon: {
-    marginRight: spacing.sm,
-  },
+  focused:     { borderColor: Colors.primary[600] },
+  errorBorder: { borderColor: Colors.danger.border },
   input: {
-    flex: 1,
-    fontSize: typography.fontSizeMd,
-    color: colors.text,
+    flex: 1, paddingVertical: Spacing[3],
+    fontSize: Typography.fontSize.md, color: Colors.textPrimary,
   },
-  errorText: {
-    fontSize: typography.fontSizeXs,
-    color: colors.error,
-    marginTop: spacing.xs,
-  },
+  leftIcon:  { marginRight: Spacing[2] },
+  rightIcon: { padding: Spacing[1] },
+  errorText: { marginTop: Spacing[1], fontSize: Typography.fontSize.sm, color: Colors.danger.text },
+  hintText:  { marginTop: Spacing[1], fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
 });

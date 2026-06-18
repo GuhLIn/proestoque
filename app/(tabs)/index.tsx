@@ -1,95 +1,77 @@
-import React, { useCallback, useState } from 'react';
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { useAuth } from "@/src/contexts/AuthContext";
 import {
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { borderRadius, colors, shadows, spacing, typography } from '../../src/constants/theme';
-import { useAuth } from '../../src/contexts/AuthContext';
-import { PRODUTOS_MOCK, RESUMO_MOCK, type Produto } from '../../src/data/mockData';
+  CATEGORIAS_MOCK,
+  formatarPreco,
+  getProdutosComEstoqueBaixo,
+  getValorTotalEstoque,
+  PRODUTOS_MOCK,
+  type Produto,
+} from "@/src/data/mockData";
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useMemo, useState } from "react";
+import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function getSaudacao() {
   const hora = new Date().getHours();
-  if (hora < 12) return 'Bom dia';
-  if (hora < 18) return 'Boa tarde';
-  return 'Boa noite';
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
-const CARDS_RESUMO = [
-  { id: '1', label: 'Produtos', valor: RESUMO_MOCK.totalProdutos, icone: '📦', cor: colors.primaryLight },
-  { id: '2', label: 'Alertas', valor: RESUMO_MOCK.alertas, icone: '⚠️', cor: '#fff3cd' },
-  { id: '3', label: 'Categorias', valor: RESUMO_MOCK.categorias, icone: '🗂️', cor: '#d1fae5' },
-  { id: '4', label: 'Em Estoque', valor: `R$ ${RESUMO_MOCK.valorEstoque.toFixed(0)}`, icone: '💰', cor: '#d1fae5' },
-];
-
-function getBadgeStyle(status: string) {
-  if (status === 'baixo') return { bg: '#fff3cd', text: '#92400e', label: 'Baixo' };
-  if (status === 'sem_estoque') return { bg: '#fee2e2', text: '#991b1b', label: 'Sem estoque' };
-  return { bg: '#d1fae5', text: '#065f46', label: 'Normal' };
-}
-
-function ProdutoItem({ item }: { item: Produto }) {
-  const badge = getBadgeStyle(item.status);
-  return (
-    <View style={styles.produtoItem}>
-      <View style={styles.produtoIcone}>
-        <Text style={{ fontSize: 20 }}>📦</Text>
-      </View>
-      <View style={styles.produtoInfo}>
-        <Text style={styles.produtoNome}>{item.nome}</Text>
-        <Text style={styles.produtoQtd}>{item.quantidade} {item.unidade}</Text>
-      </View>
-      <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-        <Text style={[styles.badgeText, { color: badge.text }]}>{badge.label}</Text>
-      </View>
-    </View>
-  );
-}
-
-export default function Home() {
+export default function HomeScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+
+  const alertas = useMemo(() => getProdutosComEstoqueBaixo(), []);
+  const valorTotal = useMemo(() => getValorTotalEstoque(), []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
   }, []);
 
-  const produtosCriticos = PRODUTOS_MOCK.filter(p => p.status !== 'normal');
-  const primeiraLetra = user?.nome?.charAt(0).toUpperCase() ?? 'U';
+  const cardsResumo = [
+    { id: "total",      titulo: "Produtos",    valor: PRODUTOS_MOCK.length,          icone: "cube-outline" as const },
+    { id: "alertas",    titulo: "Alertas",     valor: alertas.length,                icone: "alert-circle-outline" as const },
+    { id: "categorias", titulo: "Categorias",  valor: CATEGORIAS_MOCK.length,        icone: "grid-outline" as const },
+    { id: "valor",      titulo: "Em Estoque",  valor: formatarPreco(valorTotal),     icone: "cash-outline" as const },
+  ];
 
-  const ListHeader = () => (
+  const DashboardHeader = () => (
     <View>
       <View style={styles.header}>
         <View>
-          <Text style={styles.saudacao}>{getSaudacao()}, {user?.nome} 👋</Text>
+          <Text style={styles.saudacao}>{getSaudacao()}, {user?.nome?.split(" ")[0]} 👋</Text>
           <Text style={styles.subtitulo}>Visão geral do estoque</Text>
         </View>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{primeiraLetra}</Text>
+          <Text style={styles.avatarText}>
+            {user?.nome?.charAt(0).toUpperCase() ?? "?"}
+          </Text>
         </View>
       </View>
 
       <View style={styles.cardsGrid}>
-        {CARDS_RESUMO.map(card => (
-          <View key={card.id} style={[styles.card, { backgroundColor: card.cor }]}>
-            <Text style={styles.cardIcone}>{card.icone}</Text>
+        {cardsResumo.map((card) => (
+          <View key={card.id} style={styles.card}>
+            <Ionicons name={card.icone} size={20} color={Colors.primary[600]} />
             <Text style={styles.cardValor}>{card.valor}</Text>
-            <Text style={styles.cardLabel}>{card.label}</Text>
+            <Text style={styles.cardTitulo}>{card.titulo}</Text>
           </View>
         ))}
       </View>
 
-      {produtosCriticos.length > 0 && (
+      {alertas.length > 0 && (
         <View style={styles.alertaBox}>
-          <Text style={styles.alertaTitulo}>⚠️ Estoque crítico ({produtosCriticos.length})</Text>
-          {produtosCriticos.slice(0, 3).map(p => (
-            <View key={p.id} style={styles.alertaItem}>
-              <Text style={styles.alertaNome}>{p.nome}</Text>
-              <Text style={styles.alertaQtd}>{p.quantidade}/{p.estoqueMinimo}</Text>
+          <Text style={styles.alertaTitulo}>⚠️ Estoque crítico ({alertas.length})</Text>
+          {alertas.slice(0, 3).map((produto) => (
+            <View key={produto.id} style={styles.alertaItem}>
+              <Text style={styles.alertaNome}>{produto.nome}</Text>
+              <Text style={styles.alertaQtd}>
+                {produto.quantidade} / {produto.quantidadeMinima} {produto.unidade}
+              </Text>
             </View>
           ))}
         </View>
@@ -99,159 +81,76 @@ export default function Home() {
     </View>
   );
 
+  const renderProduto = ({ item }: { item: Produto }) => {
+    const emAlerta = item.quantidade < item.quantidadeMinima;
+    const semEstoque = item.quantidade === 0;
+    const categoria = CATEGORIAS_MOCK.find((c) => c.id === item.categoriaId);
+
+    return (
+      <View style={styles.produtoItem}>
+        <Ionicons
+          name={(categoria?.icone ?? "cube-outline") as any}
+          size={20}
+          color={categoria?.cor ?? Colors.primary[600]}
+        />
+        <View style={styles.produtoInfo}>
+          <Text style={styles.produtoNome}>{item.nome}</Text>
+          <Text style={styles.produtoQtd}>{item.quantidade} {item.unidade}</Text>
+        </View>
+        <View style={[
+          styles.badge,
+          semEstoque ? styles.badgeSemEstoque :
+          emAlerta ? styles.badgeAlerta : styles.badgeNormal
+        ]}>
+          <Text style={styles.badgeText}>
+            {semEstoque ? "Sem estoque" : emAlerta ? "Baixo" : "Normal"}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
-      <FlatList
+      <FlatList<Produto>
         data={PRODUTOS_MOCK}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => <ProdutoItem item={item} />}
-        ListHeaderComponent={ListHeader}
-        contentContainerStyle={styles.container}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProduto}
+        ListHeaderComponent={DashboardHeader}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[600]} />
         }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: Spacing[8] }}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  saudacao: {
-    fontSize: typography.fontSizeXl,
-    fontWeight: typography.fontWeightBold,
-    color: colors.text,
-  },
-  subtitulo: {
-    fontSize: typography.fontSizeSm,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: colors.white,
-    fontWeight: typography.fontWeightBold,
-    fontSize: typography.fontSizeLg,
-  },
-  cardsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  card: {
-    width: '47%',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    ...shadows.sm,
-  },
-  cardIcone: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
-  },
-  cardValor: {
-    fontSize: typography.fontSizeXl,
-    fontWeight: typography.fontWeightBold,
-    color: colors.text,
-  },
-  cardLabel: {
-    fontSize: typography.fontSizeXs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  alertaBox: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    backgroundColor: '#fff3cd',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-  },
-  alertaTitulo: {
-    fontSize: typography.fontSizeSm,
-    fontWeight: typography.fontWeightBold,
-    color: '#92400e',
-    marginBottom: spacing.sm,
-  },
-  alertaItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  alertaNome: {
-    fontSize: typography.fontSizeSm,
-    color: colors.text,
-  },
-  alertaQtd: {
-    fontSize: typography.fontSizeSm,
-    color: '#ef4444',
-    fontWeight: typography.fontWeightBold,
-  },
-  secaoTitulo: {
-    fontSize: typography.fontSizeMd,
-    fontWeight: typography.fontWeightBold,
-    color: colors.text,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  produtoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  produtoIcone: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  produtoInfo: {
-    flex: 1,
-  },
-  produtoNome: {
-    fontSize: typography.fontSizeSm,
-    fontWeight: typography.fontWeightMedium,
-    color: colors.text,
-  },
-  produtoQtd: {
-    fontSize: typography.fontSizeXs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: borderRadius.full,
-  },
-  badgeText: {
-    fontSize: typography.fontSizeXs,
-    fontWeight: typography.fontWeightMedium,
-  },
+  safe: { flex: 1, backgroundColor: Colors.background },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Spacing[4], paddingTop: Spacing[6] },
+  saudacao: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  subtitulo: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, marginTop: 2 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.primary[600], alignItems: "center", justifyContent: "center" },
+  avatarText: { color: Colors.white, fontWeight: Typography.fontWeight.bold, fontSize: Typography.fontSize.lg },
+  cardsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: Spacing[4], gap: Spacing[3], marginBottom: Spacing[4] },
+  card: { width: "47%", backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing[4], borderWidth: 1, borderColor: Colors.border },
+  cardValor: { fontSize: Typography.fontSize.xl, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary, marginTop: Spacing[1] },
+  cardTitulo: { fontSize: Typography.fontSize.xs, color: Colors.textSecondary, marginTop: 2 },
+  alertaBox: { marginHorizontal: Spacing[4], marginBottom: Spacing[4], backgroundColor: Colors.warning.bg, borderRadius: Radius.lg, padding: Spacing[4], borderWidth: 1, borderColor: Colors.warning.border },
+  alertaTitulo: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.bold, color: Colors.warning.text, marginBottom: Spacing[2] },
+  alertaItem: { flexDirection: "row", justifyContent: "space-between", marginBottom: Spacing[1] },
+  alertaNome: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary },
+  alertaQtd: { fontSize: Typography.fontSize.sm, color: Colors.danger.text, fontWeight: Typography.fontWeight.bold },
+  secaoTitulo: { fontSize: Typography.fontSize.md, fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary, paddingHorizontal: Spacing[4], marginBottom: Spacing[2] },
+  produtoItem: { flexDirection: "row", alignItems: "center", paddingHorizontal: Spacing[4], paddingVertical: Spacing[3], borderBottomWidth: 1, borderBottomColor: Colors.border, gap: Spacing[3] },
+  produtoInfo: { flex: 1 },
+  produtoNome: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  produtoQtd: { fontSize: Typography.fontSize.xs, color: Colors.textSecondary, marginTop: 2 },
+  badge: { paddingHorizontal: Spacing[2], paddingVertical: 3, borderRadius: Radius.full },
+  badgeNormal: { backgroundColor: Colors.success.bg },
+  badgeAlerta: { backgroundColor: Colors.warning.bg },
+  badgeSemEstoque: { backgroundColor: Colors.danger.bg },
+  badgeText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
 });

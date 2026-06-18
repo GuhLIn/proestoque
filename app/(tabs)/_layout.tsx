@@ -1,23 +1,33 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import { colors } from '../../src/constants/theme';
+import { Colors } from "@/src/constants/theme";
+import { useAuth } from "@/src/contexts/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import { Redirect, Tabs } from "expo-router";
 
 export default function TabsLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return null;
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: Colors.primary[600],
+        tabBarInactiveTintColor: Colors.neutral[400],
         tabBarStyle: {
-          borderTopColor: colors.border,
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.border,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -26,7 +36,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="produtos"
         options={{
-          title: 'Produtos',
+          title: "Produtos",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cube-outline" size={size} color={color} />
           ),
@@ -35,7 +45,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="configuracoes"
         options={{
-          title: 'Config',
+          title: "Config",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

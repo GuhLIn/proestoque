@@ -1,222 +1,120 @@
-import React, { useMemo, useState } from 'react';
-import {
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { borderRadius, colors, spacing, typography } from '../../src/constants/theme';
-import { CATEGORIAS, PRODUTOS_MOCK, type Produto } from '../../src/data/mockData';
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { CATEGORIAS_MOCK, PRODUTOS_MOCK, type Produto } from "@/src/data/mockData";
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useMemo, useState } from "react";
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-function getBadgeStyle(status: string) {
-  if (status === 'baixo') return { bg: '#fff3cd', text: '#92400e', label: 'Baixo' };
-  if (status === 'sem_estoque') return { bg: '#fee2e2', text: '#991b1b', label: 'Sem estoque' };
-  return { bg: '#d1fae5', text: '#065f46', label: 'Normal' };
-}
-
-function ProdutoItem({ item }: { item: Produto }) {
-  const badge = getBadgeStyle(item.status);
-  return (
-    <View style={styles.produtoItem}>
-      <View style={styles.produtoIcone}>
-        <Text style={{ fontSize: 20 }}>📦</Text>
-      </View>
-      <View style={styles.produtoInfo}>
-        <Text style={styles.produtoNome}>{item.nome}</Text>
-        <Text style={styles.produtoQtd}>{item.quantidade} {item.unidade}</Text>
-      </View>
-      <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-        <Text style={[styles.badgeText, { color: badge.text }]}>{badge.label}</Text>
-      </View>
-    </View>
-  );
-}
-
-export default function Produtos() {
-  const [busca, setBusca] = useState('');
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState('Todos');
+export default function ListaProdutos() {
+  const [busca, setBusca] = useState("");
+  const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null);
 
   const produtosFiltrados = useMemo(() => {
-    return PRODUTOS_MOCK.filter(p => {
-      const matchBusca = p.nome.toLowerCase().includes(busca.toLowerCase());
-      const matchCategoria = categoriaSelecionada === 'Todos' || p.categoria === categoriaSelecionada;
-      return matchBusca && matchCategoria;
+    return PRODUTOS_MOCK.filter((p) => {
+      const buscaOk = p.nome.toLowerCase().includes(busca.toLowerCase().trim());
+      const categoriaOk = categoriaAtiva ? p.categoriaId === categoriaAtiva : true;
+      return buscaOk && categoriaOk;
     });
-  }, [busca, categoriaSelecionada]);
+  }, [PRODUTOS_MOCK, busca, categoriaAtiva]);
+
+  const renderProduto = useCallback(({ item }: { item: Produto }) => {
+    const emAlerta = item.quantidade < item.quantidadeMinima;
+    const semEstoque = item.quantidade === 0;
+
+    return (
+      <View style={styles.item}>
+        <View style={styles.itemInfo}>
+          <Text style={styles.itemNome}>{item.nome}</Text>
+          <Text style={styles.itemQtd}>{item.quantidade} {item.unidade}</Text>
+        </View>
+        <View style={[
+          styles.badge,
+          semEstoque ? styles.badgeSemEstoque :
+          emAlerta ? styles.badgeAlerta : styles.badgeNormal
+        ]}>
+          <Text style={styles.badgeText}>
+            {semEstoque ? "Sem estoque" : emAlerta ? "Baixo" : "Normal"}
+          </Text>
+        </View>
+      </View>
+    );
+  }, []);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.titulo}>Produtos</Text>
-      </View>
-
-      <View style={styles.buscaContainer}>
-        <Text style={styles.buscaIcone}>🔍</Text>
-        <TextInput
-          style={styles.buscaInput}
-          placeholder="Buscar produto..."
-          placeholderTextColor={colors.textMuted}
-          value={busca}
-          onChangeText={setBusca}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
-
-      <View style={styles.chipsContainer}>
-        {CATEGORIAS.map(cat => (
-          <TouchableOpacity
-            key={cat}
-            onPress={() => setCategoriaSelecionada(cat)}
-            style={[
-              styles.chip,
-              categoriaSelecionada === cat && styles.chipAtivo,
-            ]}
-          >
-            <Text style={[
-              styles.chipText,
-              categoriaSelecionada === cat && styles.chipTextAtivo,
-            ]}>
-              {cat}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
+    <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <FlatList
         data={produtosFiltrados}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => <ProdutoItem item={item} />}
-        contentContainerStyle={styles.lista}
-        ListEmptyComponent={
-          <View style={styles.vazio}>
-            <Text style={styles.vazioIcone}>🔍</Text>
-            <Text style={styles.vazioTexto}>Nenhum produto encontrado</Text>
+        keyExtractor={(item) => item.id}
+        renderItem={renderProduto}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.titulo}>Produtos</Text>
+            <View style={styles.buscaContainer}>
+              <Ionicons name="search-outline" size={18} color={Colors.neutral[400]} />
+              <TextInput
+                style={styles.buscaInput}
+                value={busca}
+                onChangeText={setBusca}
+                placeholder="Buscar produto..."
+                placeholderTextColor={Colors.neutral[400]}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+            <View style={styles.chips}>
+              <TouchableOpacity
+                style={[styles.chip, !categoriaAtiva && styles.chipAtivo]}
+                onPress={() => setCategoriaAtiva(null)}
+              >
+                <Text style={[styles.chipText, !categoriaAtiva && styles.chipTextoAtivo]}>Todos</Text>
+              </TouchableOpacity>
+              {CATEGORIAS_MOCK.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.chip, categoriaAtiva === cat.id && styles.chipAtivo]}
+                  onPress={() => setCategoriaAtiva(p => p === cat.id ? null : cat.id)}
+                >
+                  <Text style={[styles.chipText, categoriaAtiva === cat.id && styles.chipTextoAtivo]}>
+                    {cat.nome}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         }
+        ListEmptyComponent={
+          <View style={styles.vazio}>
+            <Ionicons name="cube-outline" size={48} color={Colors.neutral[400]} />
+            <Text style={styles.vazioText}>Nenhum produto encontrado</Text>
+          </View>
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: Spacing[4], paddingBottom: Spacing[10] }}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  titulo: {
-    fontSize: typography.fontSizeXl,
-    fontWeight: typography.fontWeightBold,
-    color: colors.text,
-  },
-  buscaContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.sm,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    height: 48,
-  },
-  buscaIcone: {
-    fontSize: 16,
-    marginRight: spacing.sm,
-  },
-  buscaInput: {
-    flex: 1,
-    fontSize: typography.fontSizeMd,
-    color: colors.text,
-  },
-  chipsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-    flexWrap: 'wrap',
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  chipAtivo: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    fontSize: typography.fontSizeSm,
-    color: colors.textSecondary,
-    fontWeight: typography.fontWeightMedium,
-  },
-  chipTextAtivo: {
-    color: colors.white,
-  },
-  lista: {
-    paddingBottom: spacing.xl,
-  },
-  produtoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  produtoIcone: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  produtoInfo: {
-    flex: 1,
-  },
-  produtoNome: {
-    fontSize: typography.fontSizeSm,
-    fontWeight: typography.fontWeightMedium,
-    color: colors.text,
-  },
-  produtoQtd: {
-    fontSize: typography.fontSizeXs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: borderRadius.full,
-  },
-  badgeText: {
-    fontSize: typography.fontSizeXs,
-    fontWeight: typography.fontWeightMedium,
-  },
-  vazio: {
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-  },
-  vazioIcone: {
-    fontSize: 48,
-    marginBottom: spacing.md,
-  },
-  vazioTexto: {
-    fontSize: typography.fontSizeMd,
-    color: colors.textSecondary,
-  },
+  safe: { flex: 1, backgroundColor: Colors.background },
+  header: { paddingTop: Spacing[6], gap: Spacing[3], marginBottom: Spacing[2] },
+  titulo: { fontSize: Typography.fontSize["2xl"], fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  buscaContainer: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingHorizontal: Spacing[3], gap: Spacing[2], height: 48 },
+  buscaInput: { flex: 1, fontSize: Typography.fontSize.md, color: Colors.textPrimary },
+  chips: { flexDirection: "row", gap: Spacing[2], flexWrap: "wrap" },
+  chip: { paddingHorizontal: Spacing[3], paddingVertical: Spacing[1], borderRadius: Radius.full, backgroundColor: Colors.neutral[100], borderWidth: 1, borderColor: Colors.border },
+  chipAtivo: { backgroundColor: Colors.primary[600], borderColor: Colors.primary[600] },
+  chipText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, fontWeight: Typography.fontWeight.medium },
+  chipTextoAtivo: { color: Colors.white },
+  item: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing[4], backgroundColor: Colors.surface, borderRadius: Radius.lg, marginBottom: Spacing[2], borderWidth: 1, borderColor: Colors.border },
+  itemInfo: { flex: 1 },
+  itemNome: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  itemQtd: { fontSize: Typography.fontSize.xs, color: Colors.textSecondary, marginTop: 2 },
+  badge: { paddingHorizontal: Spacing[2], paddingVertical: 3, borderRadius: Radius.full },
+  badgeNormal: { backgroundColor: Colors.success.bg },
+  badgeAlerta: { backgroundColor: Colors.warning.bg },
+  badgeSemEstoque: { backgroundColor: Colors.danger.bg },
+  badgeText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
+  vazio: { alignItems: "center", justifyContent: "center", paddingTop: 80, gap: Spacing[3] },
+  vazioText: { color: Colors.textSecondary, fontSize: Typography.fontSize.md },
 });

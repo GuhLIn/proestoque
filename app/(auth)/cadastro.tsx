@@ -1,107 +1,102 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../../src/components/Button';
-import { Input } from '../../src/components/Input';
-import { LogoProEstoque } from '../../src/components/LogoProEstoque';
-import { colors, spacing, typography } from '../../src/constants/theme';
+import { Button } from "@/src/components/Button";
+import { Input } from "@/src/components/Input";
+import { LogoProEstoque } from "@/src/components/LogoProEstoque";
+import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { router } from "expo-router";
+import { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+type FormFields = {
+  nome: string;
+  email: string;
+  senha: string;
+  confirmarSenha: string;
+};
 
 export default function Cadastro() {
-  const [form, setForm] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: '',
+  const [form, setForm] = useState<FormFields>({
+    nome: "",
+    email: "",
+    senha: "",
+    confirmarSenha: "",
   });
-  const [errors, setErrors] = useState({ confirmarSenha: '' });
+  const [errors, setErrors] = useState<Partial<FormFields>>({});
   const [loading, setLoading] = useState(false);
 
-  function handleChange(field: keyof typeof form, value: string) {
+  const updateField = (field: keyof FormFields, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (field === 'confirmarSenha' || field === 'senha') {
-      setErrors({ confirmarSenha: '' });
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-  }
+  };
 
-  function handleCriarConta() {
-    if (form.senha !== form.confirmarSenha) {
-      setErrors({ confirmarSenha: 'As senhas não coincidem' });
-      return;
-    }
+  const validate = (): boolean => {
+    const newErrors: Partial<FormFields> = {};
+    if (!form.nome.trim()) newErrors.nome = "Nome é obrigatório";
+    if (!form.email.includes("@") || !form.email.includes(".")) newErrors.email = "Informe um e-mail válido";
+    if (form.senha.length < 6) newErrors.senha = "A senha deve ter pelo menos 6 caracteres";
+    if (form.senha !== form.confirmarSenha) newErrors.confirmarSenha = "As senhas não coincidem";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleCadastro = async () => {
+    if (!validate()) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      router.replace('/(tabs)');
+      Alert.alert("Conta criada!", "Bem-vindo ao ProEstoque.");
     }, 2000);
-  }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <LogoProEstoque size="md" />
-
-        <Text style={styles.title}>Criar conta</Text>
 
         <Input
           label="Nome completo"
-          icon="person-outline"
-          placeholder="João Silva"
           value={form.nome}
-          onChangeText={(v) => handleChange('nome', v)}
+          onChangeText={(v) => updateField("nome", v)}
+          error={errors.nome}
+          leftIcon="person-outline"
+          autoCapitalize="words"
+          returnKeyType="next"
         />
-
         <Input
           label="E-mail"
-          icon="mail-outline"
-          placeholder="joao@email.com"
           value={form.email}
-          onChangeText={(v) => handleChange('email', v)}
+          onChangeText={(v) => updateField("email", v)}
+          error={errors.email}
+          leftIcon="mail-outline"
           keyboardType="email-address"
           autoCapitalize="none"
+          returnKeyType="next"
         />
-
         <Input
           label="Senha"
-          icon="lock-closed-outline"
-          placeholder="••••••"
           value={form.senha}
-          onChangeText={(v) => handleChange('senha', v)}
+          onChangeText={(v) => updateField("senha", v)}
+          error={errors.senha}
+          leftIcon="lock-closed-outline"
           isPassword
+          returnKeyType="next"
         />
-
         <Input
           label="Confirmar senha"
-          icon="lock-closed-outline"
-          placeholder="••••"
           value={form.confirmarSenha}
-          onChangeText={(v) => handleChange('confirmarSenha', v)}
-          isPassword
+          onChangeText={(v) => updateField("confirmarSenha", v)}
           error={errors.confirmarSenha}
+          leftIcon="lock-closed-outline"
+          isPassword
+          returnKeyType="done"
+          onSubmitEditing={handleCadastro}
         />
 
-        <View style={styles.buttonWrapper}>
-          <Button
-            label="Criar Conta"
-            onPress={handleCriarConta}
-            fullWidth
-            loading={loading}
-          />
-        </View>
+        <Button label="Criar Conta" onPress={handleCadastro} loading={loading} fullWidth />
 
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.loginLink}
-        >
+        <TouchableOpacity onPress={() => router.back()} style={styles.loginLink}>
           <Text style={styles.loginLinkText}>Já tenho conta</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -110,32 +105,8 @@ export default function Cadastro() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  title: {
-    fontSize: typography.fontSizeXl,
-    fontWeight: typography.fontWeightBold,
-    color: colors.text,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-  },
-  buttonWrapper: {
-    marginTop: spacing.sm,
-  },
-  loginLink: {
-    alignSelf: 'center',
-    marginTop: spacing.lg,
-  },
-  loginLinkText: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSizeSm,
-  },
+  safe: { flex: 1, backgroundColor: Colors.background },
+  container: { flexGrow: 1, padding: Spacing[6] },
+  loginLink: { alignSelf: "center", marginTop: Spacing[4] },
+  loginLinkText: { color: Colors.textSecondary, fontSize: Typography.fontSize.sm },
 });

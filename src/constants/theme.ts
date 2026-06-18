@@ -1,63 +1,72 @@
-export const colors = {
-  primary: '#7c3aed',
-  primaryLight: '#ede9fe',
-  primaryDark: '#5b21b6',
-  background: '#ffffff',
-  surface: '#f8f7ff',
-  text: '#1e1b4b',
-  textSecondary: '#6b7280',
-  textMuted: '#9ca3af',
-  border: '#e5e7eb',
-  borderFocus: '#7c3aed',
-  error: '#ef4444',
-  errorLight: '#fef2f2',
-  success: '#10b981',
-  successLight: '#ecfdf5',
-  white: '#ffffff',
-};
+import { StyleSheet } from "react-native";
 
-export const typography = {
-  fontSizeXs: 12,
-  fontSizeSm: 14,
-  fontSizeMd: 16,
-  fontSizeLg: 18,
-  fontSizeXl: 24,
-  fontSizeXxl: 32,
-  fontWeightRegular: '400' as const,
-  fontWeightMedium: '500' as const,
-  fontWeightSemiBold: '600' as const,
-  fontWeightBold: '700' as const,
-};
-
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-};
-
-export const borderRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  full: 999,
-};
-
-export const shadows = {
-  sm: {
-    shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+export const Colors = {
+  primary: {
+    50:  "#f5f3ff",
+    100: "#ede9fe",
+    300: "#c4b5fd",
+    500: "#8b5cf6",
+    600: "#7c3aed",
+    700: "#6d28d9",
+    900: "#4c1d95",
   },
-  md: {
-    shadowColor: '#7c3aed',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+  neutral: {
+    50:  "#f9fafb",
+    100: "#f3f4f6",
+    200: "#e5e7eb",
+    400: "#9ca3af",
+    600: "#4b5563",
+    700: "#374151",
+    900: "#111827",
   },
+  success: { bg: "#d1fae5", text: "#065f46", border: "#34d399" },
+  warning: { bg: "#fef3c7", text: "#92400e", border: "#fbbf24" },
+  danger:  { bg: "#fee2e2", text: "#991b1b", border: "#f87171" },
+  info:    { bg: "#dbeafe", text: "#1e40af", border: "#60a5fa" },
+  background: "#f9fafb",
+  surface:    "#ffffff",
+  textPrimary:   "#111827",
+  textSecondary: "#6b7280",
+  border:        "#e5e7eb",
+  white:         "#ffffff",
+  black:         "#000000",
 };
+
+export const Typography = {
+  fontSize: {
+    xs:   10, sm: 12, base: 14, md: 16,
+    lg: 18, xl: 22, "2xl": 28, "3xl": 36,
+  },
+  fontWeight: {
+    regular: "400" as const,
+    medium:  "500" as const,
+    semibold:"600" as const,
+    bold:    "700" as const,
+    black:   "900" as const,
+  },
+  lineHeight: { tight: 1.2, normal: 1.5, relaxed: 1.8 },
+};
+
+export const Spacing = {
+  1: 4,   2: 8,  3: 12, 4: 16, 5: 20,
+  6: 24,  8: 32, 10: 40, 12: 48, 16: 64,
+};
+
+export const Radius = {
+  sm: 6, md: 8, lg: 12, xl: 16, full: 9999,
+};
+
+export const createShadow = (depth: number = 4) => ({
+  elevation: depth,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: depth / 2 },
+  shadowOpacity: 0.1 + depth * 0.01,
+  shadowRadius: depth,
+});
+
+export const shadows = StyleSheet.create({
+  sm:  { ...createShadow(2) },
+  md:  { ...createShadow(4) },
+  lg:  { ...createShadow(8) },
+  xl:  { ...createShadow(16) },
+});
