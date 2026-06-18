@@ -1,5 +1,6 @@
 import { Colors } from "@/src/constants/theme";
 import { AuthProvider, useAuth } from "@/src/contexts/AuthContext";
+import { ProductsProvider } from "@/src/contexts/ProductsContext";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -35,12 +36,14 @@ function NavigationGuard() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="index" />
-      </Stack>
-      <NavigationGuard />
+      <ProductsProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="index" />
+        </Stack>
+        <NavigationGuard />
+      </ProductsProvider>
     </AuthProvider>
   );
 }

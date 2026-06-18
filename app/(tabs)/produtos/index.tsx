@@ -1,28 +1,34 @@
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
-import { CATEGORIAS_MOCK, PRODUTOS_MOCK, type Produto } from "@/src/data/mockData";
+import { useProducts } from "@/src/contexts/ProductsContext";
+import { CATEGORIAS_MOCK, type Produto } from "@/src/data/mockData";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ListaProdutos() {
+  const { produtos } = useProducts();
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null);
 
   const produtosFiltrados = useMemo(() => {
-    return PRODUTOS_MOCK.filter((p) => {
+    return produtos.filter((p) => {
       const buscaOk = p.nome.toLowerCase().includes(busca.toLowerCase().trim());
       const categoriaOk = categoriaAtiva ? p.categoriaId === categoriaAtiva : true;
       return buscaOk && categoriaOk;
     });
-  }, [PRODUTOS_MOCK, busca, categoriaAtiva]);
+  }, [produtos, busca, categoriaAtiva]);
 
   const renderProduto = useCallback(({ item }: { item: Produto }) => {
     const emAlerta = item.quantidade < item.quantidadeMinima;
     const semEstoque = item.quantidade === 0;
 
     return (
-      <View style={styles.item}>
+      <TouchableOpacity
+        onPress={() => router.push(`/produtos/${item.id}`)}
+        style={styles.item}
+      >
         <View style={styles.itemInfo}>
           <Text style={styles.itemNome}>{item.nome}</Text>
           <Text style={styles.itemQtd}>{item.quantidade} {item.unidade}</Text>
@@ -36,7 +42,7 @@ export default function ListaProdutos() {
             {semEstoque ? "Sem estoque" : emAlerta ? "Baixo" : "Normal"}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }, []);
 
@@ -48,7 +54,6 @@ export default function ListaProdutos() {
         renderItem={renderProduto}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.titulo}>Produtos</Text>
             <View style={styles.buscaContainer}>
               <Ionicons name="search-outline" size={18} color={Colors.neutral[400]} />
               <TextInput
@@ -82,28 +87,35 @@ export default function ListaProdutos() {
             </View>
           </View>
         }
+        ListFooterComponent={<View style={{ height: 80 }} />}
         ListEmptyComponent={
           <View style={styles.vazio}>
             <Ionicons name="cube-outline" size={48} color={Colors.neutral[400]} />
             <Text style={styles.vazioText}>Nenhum produto encontrado</Text>
+            <TouchableOpacity onPress={() => router.push("/produtos/novo")}>
+              <Text style={styles.vazioLink}>Cadastrar produto</Text>
+            </TouchableOpacity>
           </View>
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing[4], paddingBottom: Spacing[10] }}
+        contentContainerStyle={{ paddingHorizontal: Spacing[4] }}
       />
+
+      <TouchableOpacity style={styles.fab} onPress={() => router.push("/produtos/novo")}>
+        <Ionicons name="add" size={28} color={Colors.white} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
-  header: { paddingTop: Spacing[6], gap: Spacing[3], marginBottom: Spacing[2] },
-  titulo: { fontSize: Typography.fontSize["2xl"], fontWeight: Typography.fontWeight.bold, color: Colors.textPrimary },
+  header: { paddingTop: Spacing[4], gap: Spacing[3], marginBottom: Spacing[2] },
   buscaContainer: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingHorizontal: Spacing[3], gap: Spacing[2], height: 48 },
   buscaInput: { flex: 1, fontSize: Typography.fontSize.md, color: Colors.textPrimary },
   chips: { flexDirection: "row", gap: Spacing[2], flexWrap: "wrap" },
-  chip: { paddingHorizontal: Spacing[3], paddingVertical: Spacing[1], borderRadius: Radius.full, backgroundColor: Colors.neutral[100], borderWidth: 1, borderColor: Colors.border },
-  chipAtivo: { backgroundColor: Colors.primary[600], borderColor: Colors.primary[600] },
+  chip: { paddingHorizontal: Spacing[3], paddingVertical: Spacing[1], borderRadius: Radius.full, backgroundColor: Colors.neutral[100] },
+  chipAtivo: { backgroundColor: Colors.primary[600] },
   chipText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, fontWeight: Typography.fontWeight.medium },
   chipTextoAtivo: { color: Colors.white },
   item: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: Spacing[4], backgroundColor: Colors.surface, borderRadius: Radius.lg, marginBottom: Spacing[2], borderWidth: 1, borderColor: Colors.border },
@@ -117,4 +129,6 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: Typography.fontSize.xs, fontWeight: Typography.fontWeight.semibold, color: Colors.textPrimary },
   vazio: { alignItems: "center", justifyContent: "center", paddingTop: 80, gap: Spacing[3] },
   vazioText: { color: Colors.textSecondary, fontSize: Typography.fontSize.md },
+  vazioLink: { color: Colors.primary[600], fontWeight: Typography.fontWeight.semibold, fontSize: Typography.fontSize.sm },
+  fab: { position: "absolute", bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary[600], alignItems: "center", justifyContent: "center", elevation: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6 },
 });
