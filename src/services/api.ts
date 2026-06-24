@@ -1,13 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import Constants from "expo-constants";
+import { emitSessionExpired } from "./authEvents";
 
-const BASE_URL = __DEV__
-  ? "http://192.168.100.68:3333/api"
-  : "https://sua-api-em-producao.com/api";
+const API_URL = (Constants.expoConfig?.extra?.apiUrl as string)
+  ?? "http://localhost:3333/api";
 
 export const api = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
+  baseURL: API_URL,
+  timeout: 10_000,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -21,10 +22,19 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Tratamento de sessão expirada será implementado na próxima aula
+
+  async (error) => {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      await AsyncStorage.multiRemove(["@proestoque:token", "@proestoque:user"]);
+      emitSessionExpired();
     }
-    return Promise.reject(error);
+
+    const mensagem =
+      error.response?.data?.erro ??
+      (error.code === "ECONNABORTED" ? "Tempo de conexão esgotado" : "Erro de conexão");
+
+    return Promise.reject(new Error(mensagem));
   }
 );
