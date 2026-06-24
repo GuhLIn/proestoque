@@ -1,12 +1,9 @@
 import { api } from "@/src/services/api";
+import { onSessionExpired } from "@/src/services/authEvents";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-type User = {
-  id: string;
-  nome: string;
-  email: string;
-};
+type User = { id: string; nome: string; email: string };
 
 type AuthContextType = {
   user: User | null;
@@ -20,82 +17,68 @@ type AuthContextType = {
 
 const STORAGE_KEYS = {
   TOKEN: "@proestoque:token",
-  USER:  "@proestoque:user",
+  USER: "@proestoque:user",
 } as const;
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]           = useState<User | null>(null);
-  const [token, setToken]         = useState<string | null>(null);
+  const [user, setUser]       = useState<User | null>(null);
+  const [token, setToken]     = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function carregarSessao() {
       try {
-        const [tokenSalvo, userString] = await AsyncStorage.multiGet([
-          STORAGE_KEYS.TOKEN,
-          STORAGE_KEYS.USER,
+        const [[, tokenSalvo], [, userString]] = await AsyncStorage.multiGet([
+          STORAGE_KEYS.TOKEN, STORAGE_KEYS.USER,
         ]);
-
-        const token = tokenSalvo[1];
-        const user  = userString[1] ? JSON.parse(userString[1]) : null;
-
-        if (token && user) {
-          setToken(token);
-          setUser(user);
+        if (tokenSalvo && userString) {
+          setToken(tokenSalvo);
+          setUser(JSON.parse(userString));
         }
-      } catch (error) {
-        console.warn("Erro ao carregar sessão:", error);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch {}
+      finally { setIsLoading(false); }
     }
-
     carregarSessao();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSessionExpired(() => {
+      setToken(null);
+      setUser(null);
+    });
+    return unsubscribe;
+  }, []);
+
+  const salvarSessao = useCallback(async (token: string, user: User) => {
+    await AsyncStorage.multiSet([
+      [STORAGE_KEYS.TOKEN, token],
+      [STORAGE_KEYS.USER, JSON.stringify(user)],
+    ]);
+    setToken(token);
+    setUser(user);
   }, []);
 
   const login = useCallback(async (email: string, senha: string) => {
     setIsLoading(true);
     try {
-      const response = await api.post("/auth/login", { email, senha });
-      const { usuario, token } = response.data;
-
-      await AsyncStorage.multiSet([
-        [STORAGE_KEYS.TOKEN, token],
-        [STORAGE_KEYS.USER, JSON.stringify(usuario)],
-      ]);
-
-      setToken(token);
-      setUser(usuario);
-    } catch (error: any) {
-      const mensagem = error.response?.data?.erro ?? "Erro ao fazer login";
-      throw new Error(mensagem);
+      const { data } = await api.post("/auth/login", { email, senha });
+      await salvarSessao(data.token, data.usuario);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [salvarSessao]);
 
   const registrar = useCallback(async (nome: string, email: string, senha: string) => {
     setIsLoading(true);
     try {
-      const response = await api.post("/auth/registro", { nome, email, senha });
-      const { usuario, token } = response.data;
-
-      await AsyncStorage.multiSet([
-        [STORAGE_KEYS.TOKEN, token],
-        [STORAGE_KEYS.USER, JSON.stringify(usuario)],
-      ]);
-
-      setToken(token);
-      setUser(usuario);
-    } catch (error: any) {
-      const mensagem = error.response?.data?.erro ?? "Erro ao criar conta";
-      throw new Error(mensagem);
+      const { data } = await api.post("/auth/registro", { nome, email, senha });
+      await salvarSessao(data.token, data.usuario);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [salvarSessao]);
 
   const logout = useCallback(async () => {
     await AsyncStorage.multiRemove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.USER]);
@@ -105,13 +88,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user,
-      token,
-      isLoading,
+      user, token, isLoading,
       isAuthenticated: !!token,
-      login,
-      registrar,
-      logout,
+      login, registrar, logout,
     }}>
       {children}
     </AuthContext.Provider>
@@ -119,9 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth deve ser usado dentro de um <AuthProvider>");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth deve ser usado dentro de AuthProvider");
+  return ctx;
 }
