@@ -1,16 +1,26 @@
+import { ErrorView } from "@/src/components/ErrorView";
+import { LoadingView } from "@/src/components/LoadingView";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
-import { useProducts } from "@/src/contexts/ProductsContext";
-import { CATEGORIAS_MOCK, type Produto } from "@/src/data/mockData";
+import { useProducts, type Produto } from "@/src/contexts/ProductsContext";
+import { useCategorias } from "@/src/hooks/useCategorias";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ListaProdutos() {
-  const { produtos } = useProducts();
+  const { produtos, isLoading, error, carregarProdutos } = useProducts();
+  const { categorias } = useCategorias();
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await carregarProdutos();
+    setRefreshing(false);
+  }, [carregarProdutos]);
 
   const produtosFiltrados = useMemo(() => {
     return produtos.filter((p) => {
@@ -46,6 +56,14 @@ export default function ListaProdutos() {
     );
   }, []);
 
+  if (isLoading && produtos.length === 0) {
+    return <LoadingView mensagem="Buscando produtos..." />;
+  }
+
+  if (error && produtos.length === 0) {
+    return <ErrorView mensagem={error} onRetry={carregarProdutos} />;
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={["bottom"]}>
       <FlatList
@@ -73,7 +91,7 @@ export default function ListaProdutos() {
               >
                 <Text style={[styles.chipText, !categoriaAtiva && styles.chipTextoAtivo]}>Todos</Text>
               </TouchableOpacity>
-              {CATEGORIAS_MOCK.map((cat) => (
+              {categorias.map((cat) => (
                 <TouchableOpacity
                   key={cat.id}
                   style={[styles.chip, categoriaAtiva === cat.id && styles.chipAtivo]}
@@ -86,6 +104,9 @@ export default function ListaProdutos() {
               ))}
             </View>
           </View>
+        }
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[600]} />
         }
         ListFooterComponent={<View style={{ height: 80 }} />}
         ListEmptyComponent={

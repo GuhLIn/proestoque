@@ -1,13 +1,9 @@
+import { ErrorView } from "@/src/components/ErrorView";
+import { LoadingView } from "@/src/components/LoadingView";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/contexts/AuthContext";
-import {
-  CATEGORIAS_MOCK,
-  formatarPreco,
-  getProdutosComEstoqueBaixo,
-  getValorTotalEstoque,
-  PRODUTOS_MOCK,
-  type Produto,
-} from "@/src/data/mockData";
+import { useProducts, type Produto } from "@/src/contexts/ProductsContext";
+import { formatarPreco } from "@/src/utils/formatters";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
 import { FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
@@ -22,22 +18,38 @@ function getSaudacao() {
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { produtos, isLoading, error, carregarProdutos } = useProducts();
   const [refreshing, setRefreshing] = useState(false);
 
-  const alertas = useMemo(() => getProdutosComEstoqueBaixo(), []);
-  const valorTotal = useMemo(() => getValorTotalEstoque(), []);
+  const alertas = useMemo(
+    () => produtos.filter(p => p.quantidade < p.quantidadeMinima),
+    [produtos]
+  );
 
-  const onRefresh = useCallback(() => {
+  const valorTotalEstoque = useMemo(
+    () => produtos.reduce((acc, p) => acc + p.quantidade * p.preco, 0),
+    [produtos]
+  );
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+    await carregarProdutos();
+    setRefreshing(false);
+  }, [carregarProdutos]);
 
-  const cardsResumo = [
-    { id: "total",      titulo: "Produtos",    valor: PRODUTOS_MOCK.length,          icone: "cube-outline" as const },
-    { id: "alertas",    titulo: "Alertas",     valor: alertas.length,                icone: "alert-circle-outline" as const },
-    { id: "categorias", titulo: "Categorias",  valor: CATEGORIAS_MOCK.length,        icone: "grid-outline" as const },
-    { id: "valor",      titulo: "Em Estoque",  valor: formatarPreco(valorTotal),     icone: "cash-outline" as const },
-  ];
+  const cardsResumo = useMemo(() => [
+    { id: "total",      titulo: "Produtos",   valor: produtos.length,               icone: "cube-outline" as const },
+    { id: "alertas",    titulo: "Alertas",    valor: alertas.length,                icone: "alert-circle-outline" as const },
+    { id: "valor",      titulo: "Em Estoque", valor: formatarPreco(valorTotalEstoque), icone: "cash-outline" as const },
+  ], [produtos.length, alertas.length, valorTotalEstoque]);
+
+  if (isLoading && produtos.length === 0) {
+    return <LoadingView mensagem="Carregando dashboard..." />;
+  }
+
+  if (error && produtos.length === 0) {
+    return <ErrorView mensagem={error} onRetry={carregarProdutos} />;
+  }
 
   const DashboardHeader = () => (
     <View>
@@ -84,14 +96,13 @@ export default function HomeScreen() {
   const renderProduto = ({ item }: { item: Produto }) => {
     const emAlerta = item.quantidade < item.quantidadeMinima;
     const semEstoque = item.quantidade === 0;
-    const categoria = CATEGORIAS_MOCK.find((c) => c.id === item.categoriaId);
 
     return (
       <View style={styles.produtoItem}>
         <Ionicons
-          name={(categoria?.icone ?? "cube-outline") as any}
+          name={(item.categoria?.icone ?? "cube-outline") as any}
           size={20}
-          color={categoria?.cor ?? Colors.primary[600]}
+          color={item.categoria?.cor ?? Colors.primary[600]}
         />
         <View style={styles.produtoInfo}>
           <Text style={styles.produtoNome}>{item.nome}</Text>
@@ -113,7 +124,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <FlatList<Produto>
-        data={PRODUTOS_MOCK}
+        data={produtos}
         keyExtractor={(item) => item.id}
         renderItem={renderProduto}
         ListHeaderComponent={DashboardHeader}

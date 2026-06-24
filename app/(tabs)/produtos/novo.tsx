@@ -1,15 +1,17 @@
 import Button from "@/src/components/Button";
 import Input from "@/src/components/Input";
-import { Colors, Spacing } from "@/src/constants/theme";
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useProducts } from "@/src/contexts/ProductsContext";
+import { useCategorias } from "@/src/hooks/useCategorias";
 import { produtoSchema, type ProdutoFormData } from "@/src/schemas/produtoSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView, StyleSheet } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function NovoProduto() {
   const { adicionarProduto } = useProducts();
+  const { categorias } = useCategorias();
 
   const { control, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<ProdutoFormData>({
@@ -21,8 +23,15 @@ export default function NovoProduto() {
     });
 
   const onSubmit = async (data: ProdutoFormData) => {
-    await adicionarProduto(data);
-    router.back();
+    try {
+      await adicionarProduto(data);
+      router.back();
+    } catch (error: any) {
+      Alert.alert(
+        "Não foi possível salvar",
+        error.message ?? "Verifique sua conexão e tente novamente."
+      );
+    }
   };
 
   return (
@@ -38,11 +47,24 @@ export default function NovoProduto() {
       />
 
       <Controller control={control} name="categoriaId"
-        render={({ field: { value, onChange, onBlur } }) => (
-          <Input label="Categoria *" value={value} onChangeText={onChange}
-            onBlur={onBlur} error={errors.categoriaId?.message}
-            hint="ex: cat_1 (Bebidas), cat_2 (Alimentos), cat_3 (Limpeza)"
-            returnKeyType="next" />
+        render={({ field: { value, onChange } }) => (
+          <View style={styles.campoCategoria}>
+            <Text style={styles.label}>Categoria *</Text>
+            <View style={styles.chipsRow}>
+              {categorias.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.chip, value === cat.id && styles.chipSelecionado]}
+                  onPress={() => onChange(cat.id)}
+                >
+                  <Text style={[styles.chipText, value === cat.id && styles.chipTextoSelecionado]}>
+                    {cat.nome}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {errors.categoriaId && <Text style={styles.erro}>{errors.categoriaId.message}</Text>}
+          </View>
         )}
       />
 
@@ -103,4 +125,12 @@ export default function NovoProduto() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: Colors.background },
   container: { padding: Spacing[6], gap: Spacing[1], paddingBottom: Spacing[10] },
+  campoCategoria: { marginBottom: Spacing[4] },
+  label: { fontSize: Typography.fontSize.sm, fontWeight: Typography.fontWeight.semibold, color: Colors.neutral[700], marginBottom: Spacing[1] },
+  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing[2] },
+  chip: { paddingHorizontal: Spacing[3], paddingVertical: Spacing[2], borderRadius: Radius.full, backgroundColor: Colors.neutral[100], borderWidth: 1.5, borderColor: Colors.border },
+  chipSelecionado: { backgroundColor: Colors.primary[600], borderColor: Colors.primary[600] },
+  chipText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary, fontWeight: Typography.fontWeight.medium },
+  chipTextoSelecionado: { color: Colors.white },
+  erro: { marginTop: Spacing[1], fontSize: Typography.fontSize.sm, color: Colors.danger.text },
 });
