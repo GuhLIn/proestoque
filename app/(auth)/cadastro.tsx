@@ -2,6 +2,7 @@ import { Button } from "@/src/components/Button";
 import { Input } from "@/src/components/Input";
 import { LogoProEstoque } from "@/src/components/LogoProEstoque";
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
@@ -15,6 +16,7 @@ type FormFields = {
 };
 
 export default function Cadastro() {
+  const { registrar } = useAuth();
   const [form, setForm] = useState<FormFields>({
     nome: "",
     email: "",
@@ -44,10 +46,15 @@ export default function Cadastro() {
   const handleCadastro = async () => {
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await registrar(form.nome, form.email, form.senha);
+      // NavigationGuard redireciona automaticamente para /(tabs)
+    } catch (error: any) {
+      console.log("ERRO COMPLETO:", error.message, error.response?.data, error.code);
+      Alert.alert("Erro ao criar conta", error.message ?? "Tente novamente.");
+    } finally {
       setLoading(false);
-      Alert.alert("Conta criada!", "Bem-vindo ao ProEstoque.");
-    }, 2000);
+    }
   };
 
   return (
